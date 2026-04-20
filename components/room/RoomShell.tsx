@@ -8,7 +8,7 @@ import { QuestionColumn } from "@/components/room/QuestionColumn";
 import { ActivityFeed } from "@/components/room/ActivityFeed";
 import { PresenceList } from "@/components/room/PresenceList";
 import { getBrowserSupabase, setSupabaseAuthToken } from "@/lib/supabase/client";
-import { CSRF_COOKIE } from "@/lib/auth/jwt";
+import { CSRF_COOKIE } from "@/lib/auth/cookies";
 import { CATEGORY_BY_KEY } from "@/lib/constants";
 
 export type Me = {

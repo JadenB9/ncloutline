@@ -1,13 +1,16 @@
+import "server-only";
 import { SignJWT, jwtVerify } from "jose";
 import { env } from "@/lib/env";
+import { CSRF_COOKIE, JWT_COOKIE } from "@/lib/auth/cookies";
+
+// re-export for server-side callers that used to import these from jwt.ts
+export { CSRF_COOKIE, JWT_COOKIE };
 
 // jwt must be signed with Supabase's JWT secret so auth.jwt() in RLS policies
 // can read our custom claims (room_id, fingerprint, display_name).
 
 const secret = new TextEncoder().encode(env.SUPABASE_JWT_SECRET);
 const ALG = "HS256";
-export const JWT_COOKIE = "ncl_session";
-export const CSRF_COOKIE = "ncl_csrf";
 const TWENTY_FOUR_HOURS = 60 * 60 * 24;
 
 export type SessionClaims = {

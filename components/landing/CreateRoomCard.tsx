@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Terminal, Copy, ArrowRight, Check } from "lucide-react";
-import { CSRF_COOKIE } from "@/lib/auth/jwt";
+import { CSRF_COOKIE } from "@/lib/auth/cookies";
 
 function readCsrf(): string | null {
   if (typeof document === "undefined") return null;

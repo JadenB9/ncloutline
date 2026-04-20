@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { LogIn, ArrowRight } from "lucide-react";
-import { CSRF_COOKIE } from "@/lib/auth/jwt";
+import { CSRF_COOKIE } from "@/lib/auth/cookies";
 import { ROOM_CODE_LENGTH } from "@/lib/constants";
 
 function readCsrf() {
