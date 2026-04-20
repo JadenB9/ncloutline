@@ -8,14 +8,8 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Terminal, Copy, ArrowRight, Check } from "lucide-react";
-import { CSRF_COOKIE } from "@/lib/auth/cookies";
 import { apiPath } from "@/lib/api-path";
-
-function readCsrf(): string | null {
-  if (typeof document === "undefined") return null;
-  const match = document.cookie.split(";").map((p) => p.trim()).find((p) => p.startsWith(`${CSRF_COOKIE}=`));
-  return match ? decodeURIComponent(match.slice(CSRF_COOKIE.length + 1)) : null;
-}
+import { ensureCsrf } from "@/lib/auth/csrf-client";
 
 export function CreateRoomCard() {
   const router = useRouter();
@@ -35,10 +29,10 @@ export function CreateRoomCard() {
     setBusy(true);
     setErr(null);
     try {
-      const csrf = readCsrf();
+      const csrf = await ensureCsrf();
       const res = await fetch(apiPath("/api/rooms/create"), {
         method: "POST",
-        headers: { "content-type": "application/json", "x-csrf-token": csrf ?? "" },
+        headers: { "content-type": "application/json", "x-csrf-token": csrf },
         body: JSON.stringify({
           display_name: displayName.trim().slice(0, 32),
           token: token.trim() || null,

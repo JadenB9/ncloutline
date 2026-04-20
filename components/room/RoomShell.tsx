@@ -8,9 +8,9 @@ import { QuestionColumn } from "@/components/room/QuestionColumn";
 import { ActivityFeed } from "@/components/room/ActivityFeed";
 import { PresenceList } from "@/components/room/PresenceList";
 import { getBrowserSupabase, setSupabaseAuthToken } from "@/lib/supabase/client";
-import { CSRF_COOKIE } from "@/lib/auth/cookies";
 import { CATEGORY_BY_KEY } from "@/lib/constants";
 import { apiPath } from "@/lib/api-path";
+import { ensureCsrf } from "@/lib/auth/csrf-client";
 
 export type Me = {
   room_id: string;
@@ -29,15 +29,9 @@ export type Section = {
   order_index: number;
 };
 
-function readCsrf() {
-  if (typeof document === "undefined") return null;
-  const match = document.cookie.split(";").map((p) => p.trim()).find((p) => p.startsWith(`${CSRF_COOKIE}=`));
-  return match ? decodeURIComponent(match.slice(CSRF_COOKIE.length + 1)) : null;
-}
-
 export function useCsrfFetch() {
   return useCallback(async (url: string, init: RequestInit = {}) => {
-    const csrf = readCsrf() ?? "";
+    const csrf = await ensureCsrf();
     const headers = new Headers(init.headers ?? {});
     headers.set("x-csrf-token", csrf);
     if (init.body && !headers.has("content-type")) headers.set("content-type", "application/json");
