@@ -4,10 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Terminal, Copy, ArrowRight, Check } from "lucide-react";
 import { CSRF_COOKIE } from "@/lib/auth/cookies";
+import { apiPath } from "@/lib/api-path";
 
 function readCsrf(): string | null {
   if (typeof document === "undefined") return null;
@@ -34,7 +36,7 @@ export function CreateRoomCard() {
     setErr(null);
     try {
       const csrf = readCsrf();
-      const res = await fetch("/api/rooms/create", {
+      const res = await fetch(apiPath("/api/rooms/create"), {
         method: "POST",
         headers: { "content-type": "application/json", "x-csrf-token": csrf ?? "" },
         body: JSON.stringify({
@@ -121,10 +123,9 @@ export function CreateRoomCard() {
           </div>
           <div>
             <Label htmlFor="create-token">Room password (optional)</Label>
-            <Input
+            <PasswordInput
               id="create-token"
-              type="password"
-              autoComplete="off"
+              autoComplete="new-password"
               value={token}
               onChange={(e) => setToken(e.target.value)}
               placeholder="leave blank for open room"

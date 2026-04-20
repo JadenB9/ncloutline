@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { relTime } from "@/lib/utils";
 import type { Me } from "@/components/room/RoomShell";
+import { apiPath } from "@/lib/api-path";
 
 type Member = {
   user_fingerprint: string;
@@ -19,7 +20,7 @@ export function PresenceList({ roomId, me }: { roomId: string; me: Me }) {
   useEffect(() => {
     let stopped = false;
     async function load() {
-      const res = await fetch("/api/presence");
+      const res = await fetch(apiPath("/api/presence"));
       if (!res.ok) return;
       const data = (await res.json()) as { members: Member[] };
       if (!stopped) setMembers(data.members);

@@ -13,6 +13,7 @@ import { relTime } from "@/lib/utils";
 import { MessageSquare, Lock, Trash2, Hand, X, ChevronDown, ChevronRight, Send, ShieldX } from "lucide-react";
 import type { Question } from "@/components/room/QuestionColumn";
 import type { Me } from "@/components/room/RoomShell";
+import { apiPath } from "@/lib/api-path";
 
 // tiptap + yjs only work client-side; dynamic import avoids SSR attempting to initialize
 const CollabEditor = dynamic(
@@ -77,7 +78,7 @@ export function QuestionCard({
   const mySubmission = submissions.find((s) => s.user_fingerprint === me.fingerprint);
 
   const loadAnswers = useCallback(async () => {
-    const res = await fetch(`/api/answers?question_id=${question.id}`);
+    const res = await fetch(apiPath(`/api/answers?question_id=${question.id}`));
     if (!res.ok) return;
     const data = (await res.json()) as {
       submissions: Submission[];
@@ -529,7 +530,7 @@ function Discussion({
 
   useEffect(() => {
     async function load() {
-      const res = await fetch(`/api/discussion?question_id=${questionId}`);
+      const res = await fetch(apiPath(`/api/discussion?question_id=${questionId}`));
       if (res.ok) {
         const data = (await res.json()) as { messages: DiscussionMsg[] };
         setMessages(data.messages);

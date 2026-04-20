@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { QuestionCard } from "@/components/room/QuestionCard";
 import { Plus } from "lucide-react";
 import type { Section, Me } from "@/components/room/RoomShell";
+import { apiPath } from "@/lib/api-path";
 
 export type Question = {
   id: string;
@@ -37,7 +38,7 @@ export function QuestionColumn({
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`/api/questions?section_id=${section.id}`);
+    const res = await fetch(apiPath(`/api/questions?section_id=${section.id}`));
     if (res.ok) {
       const data = (await res.json()) as { questions: Question[] };
       setQuestions(data.questions);

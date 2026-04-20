@@ -4,11 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { LogIn, ArrowRight } from "lucide-react";
 import { CSRF_COOKIE } from "@/lib/auth/cookies";
 import { ROOM_CODE_LENGTH } from "@/lib/constants";
+import { apiPath } from "@/lib/api-path";
 
 function readCsrf() {
   if (typeof document === "undefined") return null;
@@ -39,7 +41,7 @@ export function JoinRoomCard() {
     setErr(null);
     try {
       const csrf = readCsrf();
-      const res = await fetch("/api/rooms/join", {
+      const res = await fetch(apiPath("/api/rooms/join"), {
         method: "POST",
         headers: { "content-type": "application/json", "x-csrf-token": csrf ?? "" },
         body: JSON.stringify({
@@ -99,10 +101,9 @@ export function JoinRoomCard() {
           </div>
           <div>
             <Label htmlFor="join-token">Password (if required)</Label>
-            <Input
+            <PasswordInput
               id="join-token"
-              type="password"
-              autoComplete="off"
+              autoComplete="current-password"
               value={token}
               onChange={(e) => setToken(e.target.value)}
               placeholder="optional"

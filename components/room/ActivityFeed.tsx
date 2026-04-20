@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { relTime } from "@/lib/utils";
+import { apiPath } from "@/lib/api-path";
 
 type Event = {
   id: string;
@@ -34,7 +35,7 @@ export function ActivityFeed({ roomId }: { roomId: string }) {
   useEffect(() => {
     let stopped = false;
     async function load() {
-      const res = await fetch("/api/activity");
+      const res = await fetch(apiPath("/api/activity"));
       if (!res.ok) return;
       const data = (await res.json()) as { events: Event[] };
       if (!stopped) setEvents(data.events);

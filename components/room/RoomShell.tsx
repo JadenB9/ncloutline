@@ -10,6 +10,7 @@ import { PresenceList } from "@/components/room/PresenceList";
 import { getBrowserSupabase, setSupabaseAuthToken } from "@/lib/supabase/client";
 import { CSRF_COOKIE } from "@/lib/auth/cookies";
 import { CATEGORY_BY_KEY } from "@/lib/constants";
+import { apiPath } from "@/lib/api-path";
 
 export type Me = {
   room_id: string;
@@ -40,7 +41,7 @@ export function useCsrfFetch() {
     const headers = new Headers(init.headers ?? {});
     headers.set("x-csrf-token", csrf);
     if (init.body && !headers.has("content-type")) headers.set("content-type", "application/json");
-    return fetch(url, { ...init, headers });
+    return fetch(apiPath(url), { ...init, headers });
   }, []);
 }
 
@@ -138,7 +139,7 @@ export function RoomShell({ me, initialSections }: { me: Me; initialSections: Se
   }
 
   async function logout() {
-    await fetch("/api/me", { method: "DELETE" });
+    await fetch(apiPath("/api/me"), { method: "DELETE" });
     window.location.href = "/";
   }
 
