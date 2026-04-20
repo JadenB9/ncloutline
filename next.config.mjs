@@ -9,6 +9,9 @@ const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: ["@node-rs/argon2"],
   },
+  // y-supabase 0.0.4-alpha imports raw TS from realtime-js/src — force Next
+  // to transpile that package so webpack doesn't choke on the ts syntax.
+  transpilePackages: ["@supabase/realtime-js"],
 };
 
 export default nextConfig;

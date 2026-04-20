@@ -38,7 +38,7 @@
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "y-protocols": "^1.0.6",
-    "y-supabase": "^0.1.1",
+    "y-supabase": "0.0.4-alpha",
     "yjs": "^13.6.20",
     "zod": "^3.24.1"
   },

@@ -7,7 +7,8 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
 import * as Y from "yjs";
-import SupabaseProvider from "y-supabase";
+// y-supabase ships files under lib/ but main points to a missing root file
+import SupabaseProvider from "y-supabase/lib/y-supabase";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 
 export type CollabEditorProps = {

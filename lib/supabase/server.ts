@@ -11,7 +11,7 @@ export function getRouteSupabase() {
   return createServerClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
     cookies: {
       getAll: () => cookieStore.getAll(),
-      setAll: (toSet) => {
+      setAll: (toSet: Array<{ name: string; value: string; options?: Parameters<typeof cookieStore.set>[2] }>) => {
         for (const { name, value, options } of toSet) {
           cookieStore.set(name, value, options);
         }

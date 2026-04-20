@@ -13,6 +13,7 @@ build/
 .nuxt/
 .svelte-kit/
 .output/
+tsconfig.tsbuildinfo
 
 # IDE
 .idea/
