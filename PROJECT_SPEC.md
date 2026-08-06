@@ -6,14 +6,14 @@
 
 The following steps could not be automated and need your attention:
 
-1. **Scaffold Next.js:** Run: bunx create-next-app@latest /Users/jaden/Library/Mobile Documents/com~apple~CloudDocs/Projects/ncloutline --ts --eslint --app --src-dir --import-alias @/* --tailwind --use-bun
+1. **Scaffold Next.js:** Run: bunx create-next-app@latest ncloutline --ts --eslint --app --src-dir --import-alias @/* --tailwind --use-bun
 
 Complete these steps before starting development.
 
 ## Project Info
 
 - **Name:** ncloutline
-- **Directory:** `/Users/jaden/Library/Mobile Documents/com~apple~CloudDocs/Projects/ncloutline`
+- **Directory:** `ncloutline/`
 - **Stack:** custom
 - **Created:** 2026-04-17
 
