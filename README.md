@@ -28,7 +28,7 @@ I wired up everything that can be automated from code. The rest lives on externa
 ### 2. Local dev
 
 ```bash
-cd /Users/jaden/Library/Mobile\ Documents/com~apple~CloudDocs/Projects/ncloutline
+cd ncloutline
 bun install
 cp .env.example .env.local
 # paste the Supabase values from step 1 above
@@ -65,14 +65,14 @@ gh repo create ncloutline --private --source=. --push   # or --public
 
 j4den.com runs on Cloudflare Pages. The cleanest way to mount NCL Arena under a subpath on that domain is a reverse-proxy rewrite in `_redirects`. I already added the entry for you in this commit, but you need to redeploy j4den.com for it to take effect.
 
-1. Open `/Users/jaden/Library/Mobile Documents/com~apple~CloudDocs/Projects/j4den/frontend/public/_redirects` and confirm it now contains a line like:
+1. Open the j4den site repo's `frontend/public/_redirects` and confirm it now contains a line like:
    ```
    /NCLtest/* https://<YOUR-VERCEL-URL>/NCLtest/:splat 200
    ```
    If the placeholder still says `<YOUR-VERCEL-URL>`, replace it with your actual Vercel URL from step 4.5.
 2. Commit and push the j4den repo:
    ```bash
-   cd /Users/jaden/Library/Mobile\ Documents/com~apple~CloudDocs/Projects/j4den
+   cd path/to/j4den
    git add frontend/public/index.html frontend/public/_redirects
    git commit -m "add NCL Arena tile"
    git push
