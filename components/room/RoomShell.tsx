@@ -185,30 +185,29 @@ function RoomHeader({ roomCode, me, onLogout }: { roomCode: string; me: Me; onLo
     setTimeout(() => setCopied(false), 1200);
   }
   return (
-    <header className="border-b border-border px-4 py-2 flex items-center gap-3 bg-bg-deep/80 font-mono text-xs">
-      <span className="text-accent-cyan">$</span>
-      <span className="text-text-secondary">ncl-arena:~/room/</span>
+    <header className="border-b border-border px-4 py-2.5 flex items-center gap-3 bg-bg-deep/80 text-sm">
+      <span className="font-display font-semibold text-text-primary">NCL Arena</span>
+      <span className="text-text-dim">/</span>
       <button
         onClick={copy}
-        className="text-accent-cyan hover:underline decoration-dotted underline-offset-2"
-        title="copy room code"
+        className="font-mono text-[13px] text-accent-cyan hover:underline decoration-dotted underline-offset-2"
+        title="Copy room code"
       >
         {roomCode}
       </button>
-      {copied && <span className="text-accent-green text-[10px]">✓ copied</span>}
-      <span className="text-text-dim animate-blink">█</span>
+      {copied && <span className="text-accent-green text-xs">Copied</span>}
       <div className="ml-auto flex items-center gap-3">
         <span
           className="status-dot"
           style={{ background: me.color }}
           aria-hidden
         />
-        <span className="text-text-primary">{me.display_name}</span>
+        <span className="text-text-primary text-[13px]">{me.display_name}</span>
         <button
           onClick={onLogout}
-          className="text-text-secondary hover:text-accent-red uppercase tracking-wider text-[10px]"
+          className="text-text-secondary hover:text-accent-red text-[13px]"
         >
-          leave
+          Leave
         </button>
       </div>
     </header>

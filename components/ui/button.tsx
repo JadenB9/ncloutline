@@ -4,25 +4,25 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 font-mono text-sm font-medium uppercase tracking-wide transition-colors disabled:opacity-40 disabled:cursor-not-allowed select-none",
+  "inline-flex items-center justify-center gap-2 font-sans text-sm font-medium rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed select-none",
   {
     variants: {
       variant: {
         primary:
-          "bg-accent-cyan text-bg-deep hover:bg-[#33EBFF] active:bg-[#00B8CC] border border-accent-cyan",
+          "bg-accent-cyan text-white hover:bg-[#6E9AF2] active:bg-[#4A7BDB] shadow-hard",
         green:
-          "bg-accent-green text-bg-deep hover:bg-[#33FFA3] active:bg-[#00CC6D] border border-accent-green",
+          "bg-accent-green text-white hover:bg-[#54C69A] active:bg-[#3AA57B] shadow-hard",
         outline:
-          "bg-transparent text-text-primary border border-border hover:border-accent-cyan hover:text-accent-cyan",
+          "bg-transparent text-text-primary border border-border hover:border-border-strong hover:bg-bg-elevated",
         ghost:
-          "bg-transparent text-text-secondary hover:text-accent-cyan hover:bg-bg-elevated",
+          "bg-transparent text-text-secondary hover:text-text-primary hover:bg-bg-elevated",
         danger:
-          "bg-transparent text-accent-red border border-accent-red hover:bg-accent-red hover:text-bg-deep",
+          "bg-transparent text-accent-red border border-border hover:border-accent-red hover:bg-accent-red/10",
       },
       size: {
         sm: "h-7 px-2 text-xs",
         md: "h-9 px-3",
-        lg: "h-11 px-4 text-base",
+        lg: "h-11 px-4",
         icon: "h-8 w-8",
       },
     },
