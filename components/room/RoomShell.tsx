@@ -8,7 +8,7 @@ import { QuestionColumn } from "@/components/room/QuestionColumn";
 import { ActivityFeed } from "@/components/room/ActivityFeed";
 import { PresenceList } from "@/components/room/PresenceList";
 import { getBrowserSupabase, setSupabaseAuthToken } from "@/lib/supabase/client";
-import { CATEGORY_BY_KEY } from "@/lib/constants";
+import { BACKEND_ASLEEP_MSG, CATEGORY_BY_KEY } from "@/lib/constants";
 import { apiPath, inviteLink } from "@/lib/api-path";
 import { csrfFetch } from "@/lib/auth/csrf-client";
 
@@ -29,8 +29,15 @@ export type Section = {
   order_index: number;
 };
 
-export function useCsrfFetch() {
-  return useCallback((url: string, init: RequestInit = {}) => csrfFetch(url, init), []);
+export type RoomFetch = (url: string, init?: RequestInit) => Promise<Response>;
+
+// turn a failed write into something worth showing the user
+async function describeFailure(res: Response) {
+  if (res.status === 0) return "Network error. Your last change wasn't saved.";
+  if (res.status >= 502 && res.status <= 504) return BACKEND_ASLEEP_MSG;
+  if (res.status === 401) return "Your session has expired. Leave and rejoin the room.";
+  const data = (await res.clone().json().catch(() => null)) as { error?: string } | null;
+  return `Couldn't save that change${data?.error ? ` (${data.error})` : ""}.`;
 }
 
 export function RoomShell({ me, initialSections }: { me: Me; initialSections: Section[] }) {
@@ -39,7 +46,17 @@ export function RoomShell({ me, initialSections }: { me: Me; initialSections: Se
     initialSections[0]?.id ?? null
   );
   const presenceTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const csrfFetch = useCsrfFetch();
+  const [notice, setNotice] = useState<string | null>(null);
+  const [navOpen, setNavOpen] = useState(false);
+
+  // every write in the room goes through here, so it's the one place that
+  // tells the user when something didn't save. a network failure comes back
+  // as a status-0 Response so callers only ever have to check res.ok.
+  const roomFetch = useCallback<RoomFetch>(async (url, init = {}) => {
+    const res = await csrfFetch(url, init).catch(() => Response.error());
+    if (!res.ok) setNotice(await describeFailure(res));
+    return res;
+  }, []);
 
   // hand our JWT to supabase-js so realtime + postgrest run under RLS
   useEffect(() => {
@@ -98,26 +115,28 @@ export function RoomShell({ me, initialSections }: { me: Me; initialSections: Se
     return () => {
       if (presenceTimer.current) clearInterval(presenceTimer.current);
     };
-  }, [activeSectionId, csrfFetch]);
+  }, [activeSectionId]);
 
   const activeSection = sections.find((s) => s.id === activeSectionId) ?? null;
 
   async function addSection() {
     const name = window.prompt("Name for new custom section?");
     if (!name) return;
-    const res = await csrfFetch("/api/sections", {
+    const res = await roomFetch("/api/sections", {
       method: "POST",
       body: JSON.stringify({ name }),
     });
     if (!res.ok) return;
     const data = (await res.json()) as { section: Section };
+    // add it ourselves rather than waiting on the realtime echo
+    setSections((prev) => (prev.some((s) => s.id === data.section.id) ? prev : [...prev, data.section]));
     setActiveSectionId(data.section.id);
   }
 
   async function removeSection(section: Section) {
     if (!section.is_custom) return;
     if (!window.confirm(`Delete "${section.name}"? Questions inside will be removed.`)) return;
-    const res = await csrfFetch(`/api/sections/${section.id}`, { method: "DELETE" });
+    const res = await roomFetch(`/api/sections/${section.id}`, { method: "DELETE" });
     if (res.ok) {
       setSections((prev) => prev.filter((s) => s.id !== section.id));
       if (activeSectionId === section.id) {
@@ -132,16 +151,54 @@ export function RoomShell({ me, initialSections }: { me: Me; initialSections: Se
     window.location.href = apiPath("/");
   }
 
+  function selectSection(id: string) {
+    setActiveSectionId(id);
+    setNavOpen(false);
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <RoomHeader roomCode={me.room_code} me={me} onLogout={logout} />
 
-      <div className="flex-1 grid grid-cols-[240px_1fr_280px] min-h-0">
-        <aside className="border-r border-border panel overflow-y-auto scroll-thin">
+      {notice && (
+        <div
+          role="alert"
+          className="px-4 py-2 flex items-start gap-3 border-b border-accent-red/40 bg-accent-red/10 text-[13px] text-text-primary"
+        >
+          <span className="flex-1">{notice}</span>
+          <button
+            type="button"
+            onClick={() => setNotice(null)}
+            className="text-text-secondary hover:text-text-primary"
+            aria-label="Dismiss"
+          >
+            <Icons.X size={14} />
+          </button>
+        </div>
+      )}
+
+      {/* below lg the sidebar collapses behind this bar */}
+      <button
+        type="button"
+        onClick={() => setNavOpen((v) => !v)}
+        aria-expanded={navOpen}
+        aria-controls="room-nav"
+        className="lg:hidden px-4 py-2.5 flex items-center gap-2 border-b border-border bg-bg-panel text-left font-mono text-xs text-text-primary"
+      >
+        <Icons.Menu size={14} className="text-text-secondary" />
+        <span className="flex-1 truncate">{activeSection?.name ?? "Sections"}</span>
+        <Icons.ChevronDown size={14} className={navOpen ? "rotate-180 transition-transform" : "transition-transform"} />
+      </button>
+
+      <div className="flex-1 flex flex-col lg:grid lg:grid-cols-[240px_1fr_280px] min-h-0">
+        <aside
+          id="room-nav"
+          className={`${navOpen ? "block" : "hidden"} lg:block border-b lg:border-b-0 lg:border-r border-border panel overflow-y-auto scroll-thin max-h-[70vh] lg:max-h-none`}
+        >
           <SectionList
             sections={sections}
             activeId={activeSectionId}
-            onSelect={setActiveSectionId}
+            onSelect={selectSection}
             onAdd={addSection}
             onRemove={removeSection}
           />
@@ -150,12 +207,12 @@ export function RoomShell({ me, initialSections }: { me: Me; initialSections: Se
           </div>
         </aside>
 
-        <main className="overflow-y-auto scroll-thin bg-bg-deep/60">
+        <main className="flex-1 overflow-y-auto scroll-thin bg-bg-deep/60">
           {activeSection ? (
             <QuestionColumn
               section={activeSection}
               me={me}
-              csrfFetch={csrfFetch}
+              csrfFetch={roomFetch}
             />
           ) : (
             <div className="grid place-items-center h-full text-text-dim font-mono text-xs">
@@ -164,7 +221,7 @@ export function RoomShell({ me, initialSections }: { me: Me; initialSections: Se
           )}
         </main>
 
-        <aside className="border-l border-border panel overflow-y-auto scroll-thin">
+        <aside className="border-t lg:border-t-0 lg:border-l border-border panel overflow-y-auto scroll-thin max-h-80 lg:max-h-none">
           <ActivityFeed roomId={me.room_id} />
         </aside>
       </div>

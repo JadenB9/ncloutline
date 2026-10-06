@@ -100,6 +100,7 @@ function SectionRow({
       <button
         type="button"
         onClick={onClick}
+        aria-current={active ? "true" : undefined}
         className={cn(
           "w-full text-left px-3 py-1.5 flex items-center gap-2 font-mono text-xs",
           active ? "bg-bg-elevated text-accent-cyan" : "text-text-primary hover:bg-bg-elevated"
@@ -112,7 +113,7 @@ function SectionRow({
         <button
           type="button"
           onClick={onRemove}
-          className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 text-text-dim hover:text-accent-red"
+          className="absolute right-2 top-1/2 -translate-y-1/2 lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100 text-text-dim hover:text-accent-red"
           aria-label={`Delete ${section.name}`}
         >
           <X size={12} />

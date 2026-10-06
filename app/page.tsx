@@ -41,8 +41,10 @@ export default function LandingPage() {
       </section>
 
       <footer className="px-6 py-4 border-t border-border/60 flex items-center justify-between text-[12px] text-text-dim">
-        <span>Rooms expire after inactivity</span>
-        <span>j4den.com</span>
+        <span>Only people with the room code can get in</span>
+        <a href="https://j4den.com" className="hover:text-text-secondary">
+          j4den.com
+        </a>
       </footer>
     </main>
   );

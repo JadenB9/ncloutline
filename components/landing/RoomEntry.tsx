@@ -269,7 +269,9 @@ export function RoomEntry() {
           <button
             key={m}
             role="tab"
+            id={`tab-${m}`}
             aria-selected={mode === m}
+            aria-controls={`panel-${m}`}
             onClick={() => switchMode(m)}
             className={[
               "h-9 rounded-md text-sm font-medium transition-colors",
@@ -284,7 +286,7 @@ export function RoomEntry() {
       </div>
 
       {mode === "join" ? (
-        <form onSubmit={onJoin} className="space-y-4">
+        <form onSubmit={onJoin} className="space-y-4" role="tabpanel" id="panel-join" aria-labelledby="tab-join">
           <div className="space-y-1.5">
             <Label htmlFor="join-code">Room code</Label>
             <CodeInput value={code} onChange={setCode} />
@@ -323,7 +325,7 @@ export function RoomEntry() {
           </Button>
         </form>
       ) : (
-        <form onSubmit={onCreate} className="space-y-4">
+        <form onSubmit={onCreate} className="space-y-4" role="tabpanel" id="panel-create" aria-labelledby="tab-create">
           <div className="space-y-1.5">
             <Label htmlFor="create-name">Display name</Label>
             <Input

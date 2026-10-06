@@ -12,7 +12,7 @@ import { ConfidenceBar } from "@/components/room/ConfidenceBar";
 import { relTime } from "@/lib/utils";
 import { MessageSquare, Lock, Trash2, Hand, X, ChevronDown, ChevronRight, Send, ShieldX } from "lucide-react";
 import type { Question } from "@/components/room/QuestionColumn";
-import type { Me } from "@/components/room/RoomShell";
+import type { Me, RoomFetch } from "@/components/room/RoomShell";
 import { apiPath } from "@/lib/api-path";
 
 // tiptap + yjs only work client-side; dynamic import avoids SSR attempting to initialize
@@ -63,11 +63,13 @@ export function QuestionCard({
   me,
   csrfFetch,
   onRemoved,
+  onUpdated,
 }: {
   question: Question;
   me: Me;
-  csrfFetch: (url: string, init?: RequestInit) => Promise<Response>;
+  csrfFetch: RoomFetch;
   onRemoved: () => void;
+  onUpdated: (patch: Partial<Question>) => void;
 }) {
   const [expanded, setExpanded] = useState(question.status !== "solved");
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -78,8 +80,8 @@ export function QuestionCard({
   const mySubmission = submissions.find((s) => s.user_fingerprint === me.fingerprint);
 
   const loadAnswers = useCallback(async () => {
-    const res = await fetch(apiPath(`/api/answers?question_id=${question.id}`));
-    if (!res.ok) return;
+    const res = await fetch(apiPath(`/api/answers?question_id=${question.id}`)).catch(() => null);
+    if (!res?.ok) return;
     const data = (await res.json()) as {
       submissions: Submission[];
       groups: AnswerGroup[];
@@ -111,15 +113,18 @@ export function QuestionCard({
     return () => { supabase.removeChannel(channel); };
   }, [question.id, loadAnswers]);
 
+  // each write reloads this card itself; realtime keeps everyone else in sync
   async function submitAnswer(value: string, confidence: number) {
     await csrfFetch("/api/answers", {
       method: "PUT",
       body: JSON.stringify({ question_id: question.id, value, confidence }),
     });
+    await loadAnswers();
   }
 
   async function clearMyAnswer() {
     await csrfFetch(`/api/answers?question_id=${question.id}`, { method: "DELETE" });
+    await loadAnswers();
   }
 
   async function toggleStrike(submissionId: string) {
@@ -127,20 +132,27 @@ export function QuestionCard({
       method: "POST",
       body: JSON.stringify({ submission_id: submissionId }),
     });
+    await loadAnswers();
   }
 
   async function lockAnswer(value: string) {
-    await csrfFetch("/api/answers/lock", {
+    const res = await csrfFetch("/api/answers/lock", {
       method: "POST",
       body: JSON.stringify({ question_id: question.id, value }),
     });
+    if (res.ok) onUpdated({ status: "solved", flag: value, solved_at: new Date().toISOString() });
+    await loadAnswers();
   }
 
   async function patchQuestion(patch: Record<string, unknown>) {
-    await csrfFetch(`/api/questions/${question.id}`, {
+    const res = await csrfFetch(`/api/questions/${question.id}`, {
       method: "PATCH",
       body: JSON.stringify(patch),
     });
+    if (res.ok) {
+      const data = (await res.json()) as { question: Question };
+      onUpdated(data.question);
+    }
   }
 
   async function removeQuestion() {
@@ -155,19 +167,20 @@ export function QuestionCard({
   return (
     <article className="panel card-glow transition-colors">
       {/* meta row */}
-      <header className="px-3 py-2 border-b border-border flex items-center gap-3 font-mono text-[11px]">
+      <header className="px-3 py-2 border-b border-border flex flex-wrap items-center gap-x-3 gap-y-1.5 font-mono text-[11px]">
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
           className="flex items-center gap-1 text-text-secondary hover:text-accent-cyan"
-          aria-label={expanded ? "collapse" : "expand"}
+          aria-label={expanded ? "Collapse question" : "Expand question"}
+          aria-expanded={expanded}
         >
           {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
         </button>
         <span
           className="status-dot"
           style={{ background: STATUS_COLOR[question.status] }}
-          title={STATUS_LABEL[question.status]}
+          aria-hidden
         />
         <StatusPicker status={question.status} onChange={(s) => patchQuestion({ status: s })} />
         <span className="text-text-dim">·</span>
@@ -192,6 +205,8 @@ export function QuestionCard({
             onClick={() => setShowDiscuss((v) => !v)}
             className="text-text-secondary hover:text-accent-cyan p-1"
             title="discussion"
+            aria-label="Discussion"
+            aria-expanded={showDiscuss}
           >
             <MessageSquare size={12} />
           </button>
@@ -200,6 +215,7 @@ export function QuestionCard({
             onClick={removeQuestion}
             className="text-text-secondary hover:text-accent-red p-1"
             title="delete"
+            aria-label="Delete question"
           >
             <Trash2 size={12} />
           </button>
@@ -397,6 +413,7 @@ function AnswerSection({
                           onClick={() => onStrike(s.submission_id)}
                           className="ml-auto text-text-dim hover:text-accent-red"
                           title={strikeCount > 0 ? `${strikeCount} strike${strikeCount === 1 ? "" : "s"}` : "mark as wrong"}
+                          aria-label={`Mark ${s.name}'s answer as wrong`}
                         >
                           <ShieldX size={11} />
                           {strikeCount > 0 && <span className="ml-1 text-[10px]">{strikeCount}</span>}
@@ -430,6 +447,8 @@ function AnswerSection({
         <Input
           value={value}
           onChange={(e) => setValue(e.target.value)}
+          aria-label="Your answer"
+          maxLength={2000}
           placeholder="e.g. flag{wh4t_a_w0rld}"
           className="text-accent-green"
         />
@@ -472,6 +491,7 @@ function StatusPicker({
   return (
     <select
       value={status}
+      aria-label="Status"
       onChange={(e) => onChange(e.target.value as Question["status"])}
       className="bg-transparent text-text-primary font-mono text-[11px] focus:outline-none"
     >
@@ -506,6 +526,8 @@ function ClaimButton({
         claimed ? "text-accent-cyan" : "text-text-secondary hover:text-accent-cyan"
       }`}
       title={claimed ? "release claim" : "claim (I'm working on it)"}
+      aria-label={claimed ? "Release claim" : "Claim this question"}
+      aria-pressed={claimed}
     >
       <Hand size={12} />
     </button>
@@ -523,7 +545,7 @@ function Discussion({
   questionId: string;
   roomId: string;
   me: Me;
-  csrfFetch: (url: string, init?: RequestInit) => Promise<Response>;
+  csrfFetch: RoomFetch;
 }) {
   const [messages, setMessages] = useState<DiscussionMsg[]>([]);
   const [body, setBody] = useState("");
@@ -545,7 +567,8 @@ function Discussion({
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "discussion_messages", filter: `question_id=eq.${questionId}` },
         (payload) => {
-          setMessages((prev) => [...prev, payload.new as DiscussionMsg]);
+          const msg = payload.new as DiscussionMsg;
+          setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
         }
       )
       .subscribe();
@@ -556,10 +579,16 @@ function Discussion({
     const text = body.trim();
     if (!text) return;
     setBody("");
-    await csrfFetch("/api/discussion", {
+    const res = await csrfFetch("/api/discussion", {
       method: "POST",
       body: JSON.stringify({ question_id: questionId, body: text }),
     });
+    if (!res.ok) {
+      setBody(text); // give the text back so it isn't lost
+      return;
+    }
+    const data = (await res.json()) as { message: DiscussionMsg };
+    setMessages((prev) => (prev.some((m) => m.id === data.message.id) ? prev : [...prev, data.message]));
   }
 
   return (
@@ -593,8 +622,10 @@ function Discussion({
             }
           }}
           placeholder="type and hit enter…"
+          aria-label="Message"
+          maxLength={2000}
         />
-        <Button size="sm" variant="primary" onClick={send} disabled={!body.trim()}>
+        <Button size="sm" variant="primary" onClick={send} disabled={!body.trim()} aria-label="Send message">
           <Send size={12} />
         </Button>
       </div>

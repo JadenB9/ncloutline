@@ -6,7 +6,7 @@ import { DIFFICULTIES, DIFFICULTY_LABEL, type DifficultyTier, CATEGORY_BY_KEY } 
 import { Button } from "@/components/ui/button";
 import { QuestionCard } from "@/components/room/QuestionCard";
 import { Plus } from "lucide-react";
-import type { Section, Me } from "@/components/room/RoomShell";
+import type { Section, Me, RoomFetch } from "@/components/room/RoomShell";
 import { apiPath } from "@/lib/api-path";
 
 export type Question = {
@@ -31,17 +31,22 @@ export function QuestionColumn({
 }: {
   section: Section;
   me: Me;
-  csrfFetch: (url: string, init?: RequestInit) => Promise<Response>;
+  csrfFetch: RoomFetch;
 }) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(apiPath(`/api/questions?section_id=${section.id}`));
-    if (res.ok) {
+    setLoadFailed(false);
+    const res = await fetch(apiPath(`/api/questions?section_id=${section.id}`)).catch(() => null);
+    if (res?.ok) {
       const data = (await res.json()) as { questions: Question[] };
       setQuestions(data.questions);
+    } else {
+      // don't pass a failed load off as "no questions yet"
+      setLoadFailed(true);
     }
     setLoading(false);
   }, [section.id]);
@@ -94,7 +99,12 @@ export function QuestionColumn({
     });
     if (!res.ok) return;
     const data = (await res.json()) as { question: Question };
-    setQuestions((prev) => [...prev, data.question]);
+    setQuestions((prev) => (prev.some((q) => q.id === data.question.id) ? prev : [...prev, data.question]));
+  }
+
+  // merge our own edits in right away instead of waiting on the realtime echo
+  function updateQuestion(id: string, patch: Partial<Question>) {
+    setQuestions((prev) => prev.map((q) => (q.id === id ? { ...q, ...patch } : q)));
   }
 
   const blurb = section.category_key ? CATEGORY_BY_KEY[section.category_key]?.blurb : null;
@@ -110,7 +120,14 @@ export function QuestionColumn({
         )}
       </div>
 
-      {loading ? (
+      {loadFailed && !loading ? (
+        <div role="alert" className="panel p-4 flex items-center gap-3 text-[13px] text-text-secondary">
+          <span className="flex-1">Couldn&apos;t load the questions for this section.</span>
+          <Button size="sm" variant="outline" onClick={load}>
+            Retry
+          </Button>
+        </div>
+      ) : loading ? (
         <div className="space-y-2">
           {Array.from({ length: 3 }).map((_, i) => (
             <div
@@ -132,6 +149,7 @@ export function QuestionColumn({
                 me={me}
                 csrfFetch={csrfFetch}
                 onRemoved={(id) => setQuestions((prev) => prev.filter((q) => q.id !== id))}
+                onUpdated={updateQuestion}
               />
             );
           })}
@@ -148,13 +166,15 @@ function DifficultyGroup({
   me,
   csrfFetch,
   onRemoved,
+  onUpdated,
 }: {
   difficulty: DifficultyTier;
   questions: Question[];
   onAdd: () => void;
   me: Me;
-  csrfFetch: (url: string, init?: RequestInit) => Promise<Response>;
+  csrfFetch: RoomFetch;
   onRemoved: (id: string) => void;
+  onUpdated: (id: string, patch: Partial<Question>) => void;
 }) {
   const color = difficulty === "easy" ? "#00FF88" : difficulty === "medium" ? "#FFB800" : "#FF3355";
   return (
@@ -167,7 +187,13 @@ function DifficultyGroup({
         <span className="text-[11px] font-mono text-text-dim">
           ({questions.length})
         </span>
-        <Button size="sm" variant="ghost" onClick={onAdd} className="ml-auto">
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={onAdd}
+          className="ml-auto"
+          aria-label={`Add ${DIFFICULTY_LABEL[difficulty].toLowerCase()} question`}
+        >
           <Plus size={12} /> add
         </Button>
       </div>
@@ -184,6 +210,7 @@ function DifficultyGroup({
                 me={me}
                 csrfFetch={csrfFetch}
                 onRemoved={() => onRemoved(q.id)}
+                onUpdated={(patch) => onUpdated(q.id, patch)}
               />
             </li>
           ))}
