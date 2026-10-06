@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "crypto";
 import { getAdminSupabase } from "@/lib/supabase/server";
 import { dbUnreachable } from "@/lib/api/guard";
 
@@ -27,8 +28,26 @@ export async function rateLimit(opts: {
   return { ok: Boolean(data), bucket };
 }
 
+// j4den.com reaches us through a cloudflare worker, so vercel only sees the
+// worker's address and every visitor would land in the same rate-limit bucket.
+// the worker can pass the real address in x-ncl-client-ip together with a
+// shared secret. only trust it when the secret matches -- otherwise anyone
+// hitting the vercel url directly could pick their own bucket.
+function trustedProxyIp(req: Request): string | null {
+  const secret = process.env.NCL_PROXY_SECRET;
+  const sent = req.headers.get("x-ncl-proxy-secret");
+  const ip = req.headers.get("x-ncl-client-ip");
+  if (!secret || !sent || !ip) return null;
+  const a = Buffer.from(sent);
+  const b = Buffer.from(secret);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+  return ip.trim();
+}
+
 // dig the caller IP out of common proxy headers
 export function getClientIp(req: Request): string {
+  const proxied = trustedProxyIp(req);
+  if (proxied) return proxied;
   const xff = req.headers.get("x-forwarded-for");
   if (xff) return xff.split(",")[0]!.trim();
   const real = req.headers.get("x-real-ip");
