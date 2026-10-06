@@ -1,7 +1,7 @@
 import "server-only";
 import { SignJWT, jwtVerify } from "jose";
 import { env } from "@/lib/env";
-import { CSRF_COOKIE, JWT_COOKIE } from "@/lib/auth/cookies";
+import { COOKIE_PATH, CSRF_COOKIE, JWT_COOKIE } from "@/lib/auth/cookies";
 
 // re-export for server-side callers that used to import these from jwt.ts
 export { CSRF_COOKIE, JWT_COOKIE };
@@ -46,6 +46,6 @@ export const JWT_COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: "lax" as const,
-  path: "/",
+  path: COOKIE_PATH,
   maxAge: TWENTY_FOUR_HOURS,
 };

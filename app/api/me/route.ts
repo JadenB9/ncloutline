@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { JWT_COOKIE, verifySession } from "@/lib/auth/jwt";
+import { COOKIE_PATH } from "@/lib/auth/cookies";
 
 export const runtime = "nodejs";
 
@@ -23,6 +24,6 @@ export async function GET() {
 }
 
 export async function DELETE() {
-  cookies().set({ name: JWT_COOKIE, value: "", path: "/", maxAge: 0 });
+  cookies().set({ name: JWT_COOKIE, value: "", path: COOKIE_PATH, maxAge: 0 });
   return NextResponse.json({ ok: true });
 }

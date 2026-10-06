@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { CSRF_COOKIE } from "@/lib/auth/cookies";
+import { COOKIE_PATH, CSRF_COOKIE } from "@/lib/auth/cookies";
 
 // edge middleware. sets strict security headers and seeds the CSRF cookie.
 // supabase realtime URL must be in connect-src or the websocket is blocked.
@@ -56,7 +56,7 @@ export function middleware(req: NextRequest) {
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      path: "/",
+      path: COOKIE_PATH,
       maxAge: 60 * 60 * 24,
     });
   }
@@ -65,5 +65,8 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // with a basePath the catch-all below only matches /NCLtest/..., not the bare
+  // /NCLtest landing page, which then went out with no CSP or csrf cookie.
+  // "/" is special-cased by next to match the base path itself.
+  matcher: ["/", "/((?!_next/static|_next/image|favicon.ico).*)"],
 };
