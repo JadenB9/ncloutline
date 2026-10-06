@@ -9,6 +9,7 @@ import { NCL_CATEGORIES } from "@/lib/constants";
 import { colorForFingerprint, newFingerprint } from "@/lib/utils";
 import { rateLimit, getClientIp } from "@/lib/ratelimit";
 import { csrfOk } from "@/lib/auth/csrf";
+import { backendAsleep, dbUnreachable } from "@/lib/api/guard";
 
 export const runtime = "nodejs";
 
@@ -29,6 +30,7 @@ export async function POST(req: Request) {
 
   const ip = getClientIp(req);
   const rl = await rateLimit({ key: "create", ip, max: 10, windowSeconds: 3600 });
+  if (rl.down) return backendAsleep();
   if (!rl.ok) {
     return NextResponse.json({ error: "too many room creations, try again later" }, { status: 429 });
   }
@@ -43,7 +45,7 @@ export async function POST(req: Request) {
   const tokenHash = token ? await hashToken(token) : null;
   for (let attempt = 0; attempt < 5; attempt++) {
     const candidate = generateRoomCode();
-    const { data, error } = await supabase
+    const { data, error, status } = await supabase
       .from("rooms")
       .insert({
         room_code: candidate,
@@ -53,6 +55,7 @@ export async function POST(req: Request) {
       .select("id, room_code")
       .single();
     if (error) {
+      if (dbUnreachable({ status })) return backendAsleep();
       if (attempt === 4) {
         console.error("room_create_failed", error);
         return NextResponse.json({ error: "could not create room" }, { status: 500 });

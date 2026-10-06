@@ -1,3 +1,8 @@
+// shown whenever supabase can't be reached. the free-tier project auto-pauses
+// after a week of no traffic, which is the usual reason.
+export const BACKEND_ASLEEP_MSG =
+  "The NCL Arena database is asleep right now (free-tier projects pause when idle). Please try again later.";
+
 // unambiguous alphabet — no 0/O/1/I/L to avoid typos when dictating room codes
 export const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 export const ROOM_CODE_LENGTH = 6;

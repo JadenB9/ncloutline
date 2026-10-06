@@ -8,6 +8,7 @@ import { signSession, JWT_COOKIE, JWT_COOKIE_OPTIONS } from "@/lib/auth/jwt";
 import { colorForFingerprint, newFingerprint } from "@/lib/utils";
 import { rateLimit, getClientIp } from "@/lib/ratelimit";
 import { csrfOk } from "@/lib/auth/csrf";
+import { backendAsleep, dbUnreachable } from "@/lib/api/guard";
 
 export const runtime = "nodejs";
 
@@ -31,18 +32,25 @@ export async function POST(req: Request) {
 
   const ip = getClientIp(req);
   const rl = await rateLimit({ key: "join", ip, max: 5, windowSeconds: 60 });
+  if (rl.down) return backendAsleep();
   if (!rl.ok) {
     return NextResponse.json({ error: "too many attempts, slow down" }, { status: 429 });
   }
 
   const supabase = getAdminSupabase();
-  const { data: room, error } = await supabase
+  const { data: room, error, status } = await supabase
     .from("rooms")
     .select("id, room_code, token_hash")
     .eq("room_code", room_code)
     .maybeSingle();
 
-  if (error || !room) {
+  // a database outage is not a wrong room code -- don't tell the user it is
+  if (error) {
+    if (dbUnreachable({ status })) return backendAsleep();
+    console.error("room_lookup_failed", error);
+    return NextResponse.json({ error: "could not join" }, { status: 500 });
+  }
+  if (!room) {
     return NextResponse.json({ error: GENERIC_FAIL }, { status: 401 });
   }
 

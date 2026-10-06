@@ -1,6 +1,7 @@
 import { getAdminSupabase } from "@/lib/supabase/server";
+import { dbUnreachable } from "@/lib/api/guard";
 
-export type RateLimitResult = { ok: boolean; bucket: string };
+export type RateLimitResult = { ok: boolean; bucket: string; down?: boolean };
 
 // sliding-window rate limiter backed by the rate_limit_events table +
 // check_rate_limit() SQL function. runs on the server only (service role).
@@ -12,15 +13,16 @@ export async function rateLimit(opts: {
 }): Promise<RateLimitResult> {
   const bucket = `${opts.key}:${opts.ip}`;
   const supabase = getAdminSupabase();
-  const { data, error } = await supabase.rpc("check_rate_limit", {
+  const { data, error, status } = await supabase.rpc("check_rate_limit", {
     p_bucket: bucket,
     p_max: opts.max,
     p_window_seconds: opts.windowSeconds,
   });
   if (error) {
     // fail-open so a DB blip doesn't lock everyone out. logged for ops.
+    // `down` lets the caller bail early when the whole database is gone.
     console.error("rate_limit_error", { bucket, error: error.message });
-    return { ok: true, bucket };
+    return { ok: true, bucket, down: dbUnreachable({ status }) };
   }
   return { ok: Boolean(data), bucket };
 }

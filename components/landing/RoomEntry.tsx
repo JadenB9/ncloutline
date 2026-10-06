@@ -7,11 +7,19 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Copy, Check } from "lucide-react";
-import { ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH } from "@/lib/constants";
+import { BACKEND_ASLEEP_MSG, ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH } from "@/lib/constants";
 import { apiPath } from "@/lib/api-path";
 import { ensureCsrf } from "@/lib/auth/csrf-client";
 
 type Mode = "join" | "create";
+
+// a gateway or platform error page isn't json, so res.json() can't be trusted
+// on failures. 502-504 all mean the backend isn't answering.
+async function readError(res: Response, fallback: string) {
+  const data = (await res.json().catch(() => null)) as { error?: string } | null;
+  if (res.status >= 502 && res.status <= 504) return data?.error || BACKEND_ASLEEP_MSG;
+  return data?.error || fallback;
+}
 
 /* Six fixed cells that render a room code. Interactive when an input overlays them. */
 function CodeCells({
@@ -132,9 +140,8 @@ export function RoomEntry() {
           token: token.trim() || null,
         }),
       });
-      const data = (await res.json()) as { ok?: boolean; error?: string };
       if (!res.ok) {
-        setErr(data.error || "Invalid room code or password");
+        setErr(await readError(res, "Invalid room code or password"));
         return;
       }
       router.push(`/room/${code}`);
@@ -163,11 +170,11 @@ export function RoomEntry() {
           token: token.trim() || null,
         }),
       });
-      const data = (await res.json()) as { room_code?: string; error?: string };
-      if (!res.ok || !data.room_code) {
-        setErr(data.error || "Could not create room. Try again.");
+      if (!res.ok) {
+        setErr(await readError(res, "Could not create room. Try again."));
         return;
       }
+      const data = (await res.json()) as { room_code: string };
       setCreated(data.room_code);
     } catch {
       setErr("Network error. Try again.");
@@ -267,7 +274,7 @@ export function RoomEntry() {
               placeholder="Only if the room has one"
             />
           </div>
-          {err && <p className="text-[13px] text-accent-red">{err}</p>}
+          {err && <p role="alert" className="text-[13px] text-accent-red">{err}</p>}
           <Button
             type="submit"
             variant="primary"
@@ -302,7 +309,7 @@ export function RoomEntry() {
               placeholder="Optional — leave blank for an open room"
             />
           </div>
-          {err && <p className="text-[13px] text-accent-red">{err}</p>}
+          {err && <p role="alert" className="text-[13px] text-accent-red">{err}</p>}
           <Button
             type="submit"
             variant="primary"
