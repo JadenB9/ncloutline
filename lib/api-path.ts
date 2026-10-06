@@ -6,3 +6,8 @@ const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 export function apiPath(path: string): string {
   return `${BASE}${path}`;
 }
+
+// shareable link to the landing page with the join code filled in
+export function inviteLink(code: string): string {
+  return `${window.location.origin}${BASE || "/"}?code=${code}`;
+}

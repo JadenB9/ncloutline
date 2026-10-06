@@ -1,17 +1,26 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, ArrowRight } from "lucide-react";
 import { BACKEND_ASLEEP_MSG, ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH } from "@/lib/constants";
-import { apiPath } from "@/lib/api-path";
+import { apiPath, inviteLink } from "@/lib/api-path";
 import { ensureCsrf } from "@/lib/auth/csrf-client";
 
 type Mode = "join" | "create";
+
+function cleanCode(raw: string) {
+  return raw
+    .toUpperCase()
+    .split("")
+    .filter((c) => ROOM_CODE_ALPHABET.includes(c))
+    .slice(0, ROOM_CODE_LENGTH)
+    .join("");
+}
 
 // a gateway or platform error page isn't json, so res.json() can't be trusted
 // on failures. 502-504 all mean the backend isn't answering.
@@ -64,15 +73,6 @@ function CodeInput({
   const inputRef = useRef<HTMLInputElement>(null);
   const [focused, setFocused] = useState(false);
 
-  function clean(raw: string) {
-    return raw
-      .toUpperCase()
-      .split("")
-      .filter((c) => ROOM_CODE_ALPHABET.includes(c))
-      .slice(0, ROOM_CODE_LENGTH)
-      .join("");
-  }
-
   return (
     <div className="relative">
       <CodeCells
@@ -85,7 +85,7 @@ function CodeInput({
         ref={inputRef}
         id="join-code"
         value={value}
-        onChange={(e) => onChange(clean(e.target.value))}
+        onChange={(e) => onChange(cleanCode(e.target.value))}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         className="absolute inset-0 h-full w-full opacity-0 cursor-text"
@@ -110,7 +110,23 @@ export function RoomEntry() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [created, setCreated] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"yes" | "failed" | null>(null);
+  const [current, setCurrent] = useState<{ room_code: string; display_name: string } | null>(null);
+
+  useEffect(() => {
+    // an invite link (?code=ABC123) fills in the join form
+    const fromLink = cleanCode(new URLSearchParams(window.location.search).get("code") ?? "");
+    if (fromLink.length === ROOM_CODE_LENGTH) setCode(fromLink);
+
+    // still holding a session from earlier? offer to go straight back instead
+    // of joining again as a new member
+    fetch(apiPath("/api/me"))
+      .then((res) => (res.ok ? res.json() : null))
+      .then((me: { room_code: string; display_name: string } | null) => {
+        if (me) setCurrent(me);
+      })
+      .catch(() => {});
+  }, []);
 
   function switchMode(next: Mode) {
     setMode(next);
@@ -185,9 +201,14 @@ export function RoomEntry() {
 
   async function copy() {
     if (!created) return;
-    await navigator.clipboard.writeText(created);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    try {
+      await navigator.clipboard.writeText(inviteLink(created));
+      setCopied("yes");
+    } catch {
+      // clipboard can be blocked (permissions, embedded frames)
+      setCopied("failed");
+    }
+    setTimeout(() => setCopied(null), 1500);
   }
 
   if (created) {
@@ -202,11 +223,13 @@ export function RoomEntry() {
             {token ? " along with the password" : ""}.
           </p>
         </div>
-        <CodeCells value={created} />
+        <div data-room-code={created}>
+          <CodeCells value={created} />
+        </div>
         <div className="flex gap-2">
           <Button variant="outline" size="lg" className="flex-1" onClick={copy}>
-            {copied ? <Check size={15} /> : <Copy size={15} />}
-            {copied ? "Copied" : "Copy code"}
+            {copied === "yes" ? <Check size={15} /> : <Copy size={15} />}
+            {copied === "yes" ? "Link copied" : copied === "failed" ? "Copy failed" : "Copy invite link"}
           </Button>
           <Button
             variant="primary"
@@ -223,6 +246,20 @@ export function RoomEntry() {
 
   return (
     <div className="panel shadow-soft p-6">
+      {current && (
+        <button
+          type="button"
+          onClick={() => router.push(`/room/${current.room_code}`)}
+          className="w-full mb-5 flex items-center gap-3 rounded-lg border border-border bg-bg-elevated/60 px-3 py-2.5 text-left text-sm hover:border-border-strong"
+        >
+          <span className="flex-1 min-w-0 text-text-secondary">
+            Back to room{" "}
+            <span className="font-mono text-text-primary">{current.room_code}</span> as{" "}
+            <span className="text-text-primary">{current.display_name}</span>
+          </span>
+          <ArrowRight size={15} className="flex-none text-accent-cyan" />
+        </button>
+      )}
       <div
         role="tablist"
         aria-label="Join or create a room"

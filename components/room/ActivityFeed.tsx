@@ -19,6 +19,7 @@ type Event = {
 
 const VERB_LABEL: Record<string, string> = {
   joined_room: "joined",
+  left_room: "left",
   created_room: "created room",
   added_section: "added section",
   removed_section: "removed section",

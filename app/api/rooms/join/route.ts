@@ -19,6 +19,7 @@ const Body = z.object({
 });
 
 const GENERIC_FAIL = "Invalid room code or token";
+const ACTIVE_WINDOW_MS = 2 * 60 * 1000;
 
 export async function POST(req: Request) {
   if (!csrfOk(req)) return NextResponse.json({ error: "bad csrf" }, { status: 403 });
@@ -63,10 +64,14 @@ export async function POST(req: Request) {
 
   // cap rooms at 7 members. yjs awareness and realtime presence both get
   // chatty past ~8 clients and the layout is sized for up to 7 cursor colors.
+  // only count people seen recently (the room page pings every 15s) --
+  // otherwise anyone who closed the tab and came back used up a seat for good.
+  const activeSince = new Date(Date.now() - ACTIVE_WINDOW_MS).toISOString();
   const { count: memberCount } = await supabase
     .from("room_members")
     .select("id", { count: "exact", head: true })
-    .eq("room_id", room.id);
+    .eq("room_id", room.id)
+    .gte("last_seen_at", activeSince);
   if ((memberCount ?? 0) >= 7) {
     return NextResponse.json({ error: "Room is full (7 max)" }, { status: 409 });
   }

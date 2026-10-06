@@ -9,7 +9,7 @@ import { ActivityFeed } from "@/components/room/ActivityFeed";
 import { PresenceList } from "@/components/room/PresenceList";
 import { getBrowserSupabase, setSupabaseAuthToken } from "@/lib/supabase/client";
 import { CATEGORY_BY_KEY } from "@/lib/constants";
-import { apiPath } from "@/lib/api-path";
+import { apiPath, inviteLink } from "@/lib/api-path";
 import { csrfFetch } from "@/lib/auth/csrf-client";
 
 export type Me = {
@@ -127,8 +127,9 @@ export function RoomShell({ me, initialSections }: { me: Me; initialSections: Se
   }
 
   async function logout() {
-    await fetch(apiPath("/api/me"), { method: "DELETE" });
-    window.location.href = "/";
+    await csrfFetch("/api/me", { method: "DELETE" }).catch(() => {});
+    // a plain "/" would leave the app for the j4den.com home page
+    window.location.href = apiPath("/");
   }
 
   return (
@@ -172,11 +173,15 @@ export function RoomShell({ me, initialSections }: { me: Me; initialSections: Se
 }
 
 function RoomHeader({ roomCode, me, onLogout }: { roomCode: string; me: Me; onLogout: () => void }) {
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
   async function copy() {
-    await navigator.clipboard.writeText(roomCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1200);
+    try {
+      await navigator.clipboard.writeText(inviteLink(roomCode));
+      setCopied("Invite link copied");
+    } catch {
+      setCopied("Copy failed");
+    }
+    setTimeout(() => setCopied(null), 1500);
   }
   return (
     <header className="border-b border-border px-4 py-2.5 flex items-center gap-3 bg-bg-deep/80 text-sm">
@@ -185,11 +190,12 @@ function RoomHeader({ roomCode, me, onLogout }: { roomCode: string; me: Me; onLo
       <button
         onClick={copy}
         className="font-mono text-[13px] text-accent-cyan hover:underline decoration-dotted underline-offset-2"
-        title="Copy room code"
+        title="Copy invite link"
+        aria-label={`Room ${roomCode}, copy invite link`}
       >
         {roomCode}
       </button>
-      {copied && <span className="text-accent-green text-xs">Copied</span>}
+      {copied && <span role="status" className="text-accent-green text-xs">{copied}</span>}
       <div className="ml-auto flex items-center gap-3">
         <span
           className="status-dot"
