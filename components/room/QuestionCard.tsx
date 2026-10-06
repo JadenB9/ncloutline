@@ -307,7 +307,7 @@ function AnswerSection({
   useEffect(() => {
     setValue(mySubmission?.value ?? "");
     setConfidence(mySubmission?.confidence ?? 70);
-  }, [mySubmission?.id]);
+  }, [mySubmission?.id, mySubmission?.value, mySubmission?.confidence]);
 
   const strikesBySub = strikes.reduce<Record<string, number>>((acc, s) => {
     acc[s.submission_id] = (acc[s.submission_id] ?? 0) + 1;
