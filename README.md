@@ -21,7 +21,7 @@ I wired up everything that can be automated from code. The rest lives on externa
 3. Still on the API page, open **JWT Settings** and copy the **JWT Secret** → `SUPABASE_JWT_SECRET`.
    - This is the critical one — our app signs its own session JWT with this secret so Supabase RLS policies can read our custom room claims via `auth.jwt()`.
 4. Open **SQL Editor → New query**, paste the contents of `supabase/migrations/0001_init.sql`, run.
-5. Repeat for `supabase/migrations/0002_rls.sql` in the same way.
+5. Repeat for the rest of `supabase/migrations/` in order (`0002_rls.sql`, `0003_fix_view_security_invoker.sql`, `0004_read_only_client_grants.sql`, ...).
 6. Open **Database → Replication → supabase_realtime** — the migration already enabled realtime on the right tables, but double-check that these tables are toggled on: `sections`, `questions`, `answer_submissions`, `answer_strikes`, `discussion_messages`, `activity_events`, `room_members`.
 7. (Optional) **Database → Jobs** — schedule the cleanup: `select cleanup_rate_limits();` every hour, or ignore it and a row-count task will do it lazily.
 
