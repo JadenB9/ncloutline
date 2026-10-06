@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import dynamic from "next/dynamic";
-import * as Icons from "lucide-react";
+import { ChevronDown, Menu, X } from "lucide-react";
 import { SectionList } from "@/components/room/SectionList";
 import { QuestionColumn } from "@/components/room/QuestionColumn";
 import { ActivityFeed } from "@/components/room/ActivityFeed";
 import { PresenceList } from "@/components/room/PresenceList";
 import { getBrowserSupabase, setSupabaseAuthToken } from "@/lib/supabase/client";
-import { BACKEND_ASLEEP_MSG, CATEGORY_BY_KEY } from "@/lib/constants";
+import { BACKEND_ASLEEP_MSG } from "@/lib/constants";
 import { apiPath, inviteLink } from "@/lib/api-path";
 import { csrfFetch } from "@/lib/auth/csrf-client";
 
@@ -172,7 +171,7 @@ export function RoomShell({ me, initialSections }: { me: Me; initialSections: Se
             className="text-text-secondary hover:text-text-primary"
             aria-label="Dismiss"
           >
-            <Icons.X size={14} />
+            <X size={14} />
           </button>
         </div>
       )}
@@ -185,9 +184,9 @@ export function RoomShell({ me, initialSections }: { me: Me; initialSections: Se
         aria-controls="room-nav"
         className="lg:hidden px-4 py-2.5 flex items-center gap-2 border-b border-border bg-bg-panel text-left font-mono text-xs text-text-primary"
       >
-        <Icons.Menu size={14} className="text-text-secondary" />
+        <Menu size={14} className="text-text-secondary" />
         <span className="flex-1 truncate">{activeSection?.name ?? "Sections"}</span>
-        <Icons.ChevronDown size={14} className={navOpen ? "rotate-180 transition-transform" : "transition-transform"} />
+        <ChevronDown size={14} className={navOpen ? "rotate-180 transition-transform" : "transition-transform"} />
       </button>
 
       <div className="flex-1 flex flex-col lg:grid lg:grid-cols-[240px_1fr_280px] min-h-0">
@@ -269,14 +268,4 @@ function RoomHeader({ roomCode, me, onLogout }: { roomCode: string; me: Me; onLo
       </div>
     </header>
   );
-}
-
-// surface lucide icon lookup to other components
-export function IconByName({ name, size = 14 }: { name: string; size?: number }) {
-  const key = (CATEGORY_BY_KEY[name]?.icon ?? "Hash") as keyof typeof Icons;
-  const Comp = (Icons as unknown as Record<string, React.ComponentType<{ size?: number }>>)[
-    CATEGORY_BY_KEY[name]?.icon ?? "Hash"
-  ];
-  if (!Comp) return null;
-  return <Comp size={size} />;
 }

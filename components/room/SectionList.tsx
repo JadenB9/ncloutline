@@ -1,15 +1,22 @@
 "use client";
 
-import * as Icons from "lucide-react";
+import {
+  Code2, Fingerprint, Globe, Hash, KeyRound, Network, Plus, Radar, ScrollText, Terminal, Unlock, Wifi, X,
+  type LucideIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Section } from "@/components/room/RoomShell";
 import { CATEGORY_BY_KEY } from "@/lib/constants";
-import { Plus, X } from "lucide-react";
+
+// named imports instead of `import * as Icons`, which shipped every lucide
+// icon to the browser just to look up these ten by name
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  Globe, KeyRound, Unlock, ScrollText, Network, Fingerprint, Radar, Code2, Terminal, Wifi,
+};
 
 function CategoryIcon({ section, size = 14 }: { section: Section; size?: number }) {
-  const name = section.category_key ? CATEGORY_BY_KEY[section.category_key]?.icon : "Hash";
-  const Comp = (Icons as unknown as Record<string, React.ComponentType<{ size?: number }>>)[name ?? "Hash"];
-  if (!Comp) return <Icons.Hash size={size} />;
+  const name = section.category_key ? CATEGORY_BY_KEY[section.category_key]?.icon : undefined;
+  const Comp = (name && CATEGORY_ICONS[name]) || Hash;
   return <Comp size={size} />;
 }
 
@@ -68,7 +75,7 @@ export function SectionList({
             section={s}
             active={s.id === activeId}
             onClick={() => onSelect(s.id)}
-            icon={<Icons.Hash size={14} />}
+            icon={<Hash size={14} />}
             onRemove={() => onRemove(s)}
           />
         ))}
