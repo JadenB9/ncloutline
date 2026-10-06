@@ -6,9 +6,7 @@ const nextConfig = {
   // leave as /NCLtest for the Vercel production deployment.
   basePath: process.env.NEXT_PUBLIC_BASE_PATH || "",
   assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH || undefined,
-  experimental: {
-    serverComponentsExternalPackages: ["@node-rs/argon2"],
-  },
+  serverExternalPackages: ["@node-rs/argon2"],
   // y-supabase 0.0.4-alpha imports raw TS from realtime-js/src — force Next
   // to transpile that package so webpack doesn't choke on the ts syntax.
   transpilePackages: ["@supabase/realtime-js"],

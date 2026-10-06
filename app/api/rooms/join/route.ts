@@ -106,7 +106,7 @@ export async function POST(req: Request) {
     color,
   });
 
-  cookies().set({ name: JWT_COOKIE, value: jwt, ...JWT_COOKIE_OPTIONS });
+  (await cookies()).set({ name: JWT_COOKIE, value: jwt, ...JWT_COOKIE_OPTIONS });
 
   return NextResponse.json({ ok: true });
 }

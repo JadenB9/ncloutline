@@ -15,7 +15,7 @@ export async function requireSession(req: Request, opts?: { requireCsrf?: boolea
       };
     }
   }
-  const token = cookies().get(JWT_COOKIE)?.value;
+  const token = (await cookies()).get(JWT_COOKIE)?.value;
   if (!token) {
     return { ok: false, response: NextResponse.json({ error: "unauthenticated" }, { status: 401 }) };
   }

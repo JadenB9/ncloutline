@@ -7,13 +7,13 @@ import { RoomShell } from "@/components/room/RoomShell";
 import { dbUnreachable } from "@/lib/api/guard";
 import { BACKEND_ASLEEP_MSG } from "@/lib/constants";
 
-type Params = { code: string };
+type Params = Promise<{ code: string }>;
 
 export const dynamic = "force-dynamic";
 
 export default async function RoomPage({ params }: { params: Params }) {
-  const code = params.code.toUpperCase();
-  const token = cookies().get(JWT_COOKIE)?.value;
+  const code = (await params).code.toUpperCase();
+  const token = (await cookies()).get(JWT_COOKIE)?.value;
   if (!token) redirect("/");
 
   const session = await verifySession(token);

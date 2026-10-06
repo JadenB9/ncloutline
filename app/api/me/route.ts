@@ -13,7 +13,7 @@ export const runtime = "nodejs";
 // not being in a room is the normal case on the landing page, so it's a 200
 // with null rather than a 401 that shows up as a console error.
 export async function GET() {
-  const token = cookies().get(JWT_COOKIE)?.value;
+  const token = (await cookies()).get(JWT_COOKIE)?.value;
   const session = token ? await verifySession(token) : null;
   if (!session) return NextResponse.json(null);
   return NextResponse.json({
@@ -29,7 +29,7 @@ export async function GET() {
 export async function DELETE(req: Request) {
   if (!csrfOk(req)) return NextResponse.json({ error: "bad csrf" }, { status: 403 });
 
-  const token = cookies().get(JWT_COOKIE)?.value;
+  const token = (await cookies()).get(JWT_COOKIE)?.value;
   const session = token ? await verifySession(token) : null;
   if (session) {
     const supabase = getAdminSupabase();
@@ -49,6 +49,6 @@ export async function DELETE(req: Request) {
     }
   }
 
-  cookies().set({ name: JWT_COOKIE, value: "", path: COOKIE_PATH, maxAge: 0 });
+  (await cookies()).set({ name: JWT_COOKIE, value: "", path: COOKIE_PATH, maxAge: 0 });
   return NextResponse.json({ ok: true });
 }

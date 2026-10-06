@@ -48,25 +48,27 @@ async function loadDoc(id: string, roomId: string) {
   return q;
 }
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await requireSession(req, { requireCsrf: false });
   if (!auth.ok) return auth.response;
 
-  const q = await loadDoc(params.id, auth.session.room_id);
+  const q = await loadDoc(id, auth.session.room_id);
   if (!q) return bad("not found", 404);
 
   const state = fromBytea(q.ydoc_state);
   return NextResponse.json({ state: state ? Buffer.from(state).toString("base64") : null });
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await requireSession(req);
   if (!auth.ok) return auth.response;
 
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return bad("invalid body");
 
-  const q = await loadDoc(params.id, auth.session.room_id);
+  const q = await loadDoc(id, auth.session.room_id);
   if (!q) return bad("not found", 404);
 
   const incoming = new Uint8Array(Buffer.from(parsed.data.state, "base64"));
@@ -93,7 +95,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   const { error } = await supabase
     .from("questions")
     .update({ ydoc_state: toBytea(merged) })
-    .eq("id", params.id);
+    .eq("id", id);
   if (error) return bad("save failed", 500);
 
   return NextResponse.json({ ok: true });
