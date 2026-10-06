@@ -35,7 +35,7 @@ export async function signSession(claims: Omit<SessionClaims, "role">) {
 
 export async function verifySession(token: string): Promise<SessionClaims | null> {
   try {
-    const { payload } = await jwtVerify(token, secret);
+    const { payload } = await jwtVerify(token, secret, { algorithms: [ALG] });
     return payload as unknown as SessionClaims;
   } catch {
     return null;

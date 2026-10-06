@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 
 const Body = z.object({
   question_id: z.string().uuid(),
-  body: z.string().min(1).max(2000),
+  body: z.string().trim().min(1).max(2000),
 });
 
 export async function GET(req: Request) {
@@ -15,13 +15,13 @@ export async function GET(req: Request) {
   if (!auth.ok) return auth.response;
   const url = new URL(req.url);
   const questionId = url.searchParams.get("question_id");
-  if (!questionId) return bad("question_id required");
+  if (!z.string().uuid().safeParse(questionId).success) return bad("question_id required");
 
   const supabase = getAdminSupabase();
   const { data, error } = await supabase
     .from("discussion_messages")
     .select("id, user_fingerprint, display_name, color, body, created_at")
-    .eq("question_id", questionId)
+    .eq("question_id", questionId!)
     .eq("room_id", auth.session.room_id)
     .order("created_at", { ascending: true })
     .limit(200);

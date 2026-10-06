@@ -13,8 +13,8 @@ import { backendAsleep, dbUnreachable } from "@/lib/api/guard";
 export const runtime = "nodejs";
 
 const Body = z.object({
-  room_code: z.string().min(6).max(6),
-  display_name: z.string().min(1).max(32),
+  room_code: z.string().trim().toUpperCase().length(6),
+  display_name: z.string().trim().min(1).max(32).regex(/^[^\p{C}]+$/u),
   token: z.string().min(1).max(128).nullable().optional(),
 });
 

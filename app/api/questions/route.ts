@@ -17,21 +17,21 @@ export async function GET(req: Request) {
   if (!auth.ok) return auth.response;
   const url = new URL(req.url);
   const sectionId = url.searchParams.get("section_id");
-  if (!sectionId) return bad("section_id required");
+  if (!z.string().uuid().safeParse(sectionId).success) return bad("section_id required");
 
   const supabase = getAdminSupabase();
   // make sure the section belongs to the session's room
   const { data: section } = await supabase
     .from("sections")
     .select("room_id")
-    .eq("id", sectionId)
+    .eq("id", sectionId!)
     .maybeSingle();
   if (!section || section.room_id !== auth.session.room_id) return bad("not found", 404);
 
   const { data: questions, error } = await supabase
     .from("questions")
     .select("id, section_id, difficulty, prompt, notes, flag, points, status, order_index, updated_at, claimed_by, solved_at")
-    .eq("section_id", sectionId)
+    .eq("section_id", sectionId!)
     .order("difficulty", { ascending: true })
     .order("order_index", { ascending: true });
   if (error) return bad("fetch failed", 500);

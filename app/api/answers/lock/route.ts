@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 
 const Body = z.object({
   question_id: z.string().uuid(),
-  value: z.string().min(1).max(2000),
+  value: z.string().trim().min(1).max(2000),
 });
 
 // "Lock as final" — writes the team-agreed answer to questions.flag,
@@ -28,17 +28,18 @@ export async function POST(req: Request) {
   const qScoped = q as unknown as { id: string; sections: { room_id: string } } | null;
   if (!qScoped || qScoped.sections.room_id !== auth.session.room_id) return bad("not found", 404);
 
-  await supabase
+  const { error } = await supabase
     .from("questions")
     .update({ flag: parsed.data.value, status: "solved", solved_at: new Date().toISOString() })
     .eq("id", parsed.data.question_id);
+  if (error) return bad("lock failed", 500);
 
   // flag any matching submissions as accepted (case-insensitive match)
   await supabase
     .from("answer_submissions")
     .update({ status: "accepted" })
     .eq("question_id", parsed.data.question_id)
-    .filter("value_normalized", "eq", parsed.data.value.trim().toLowerCase());
+    .filter("value_normalized", "eq", parsed.data.value.toLowerCase());
 
   await supabase.from("activity_events").insert({
     room_id: auth.session.room_id,

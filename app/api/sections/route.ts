@@ -6,7 +6,7 @@ import { getAdminSupabase } from "@/lib/supabase/server";
 export const runtime = "nodejs";
 
 const CreateSectionBody = z.object({
-  name: z.string().min(1).max(60),
+  name: z.string().trim().min(1).max(60).regex(/^[^\p{C}]+$/u),
 });
 
 // list sections for the current room
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     .from("sections")
     .insert({
       room_id: auth.session.room_id,
-      name: parsed.data.name.trim(),
+      name: parsed.data.name,
       is_custom: true,
       order_index: (last?.order_index ?? -1) + 1,
     })
