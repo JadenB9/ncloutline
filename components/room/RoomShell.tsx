@@ -10,7 +10,7 @@ import { PresenceList } from "@/components/room/PresenceList";
 import { getBrowserSupabase, setSupabaseAuthToken } from "@/lib/supabase/client";
 import { CATEGORY_BY_KEY } from "@/lib/constants";
 import { apiPath } from "@/lib/api-path";
-import { ensureCsrf } from "@/lib/auth/csrf-client";
+import { csrfFetch } from "@/lib/auth/csrf-client";
 
 export type Me = {
   room_id: string;
@@ -30,13 +30,7 @@ export type Section = {
 };
 
 export function useCsrfFetch() {
-  return useCallback(async (url: string, init: RequestInit = {}) => {
-    const csrf = await ensureCsrf();
-    const headers = new Headers(init.headers ?? {});
-    headers.set("x-csrf-token", csrf);
-    if (init.body && !headers.has("content-type")) headers.set("content-type", "application/json");
-    return fetch(apiPath(url), { ...init, headers });
-  }, []);
+  return useCallback((url: string, init: RequestInit = {}) => csrfFetch(url, init), []);
 }
 
 export function RoomShell({ me, initialSections }: { me: Me; initialSections: Section[] }) {

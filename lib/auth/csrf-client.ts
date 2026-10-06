@@ -25,3 +25,12 @@ export async function ensureCsrf(): Promise<string> {
   token = readCsrfCookie();
   return token ?? "";
 }
+
+// fetch one of our api routes with the base path and csrf header added
+export async function csrfFetch(url: string, init: RequestInit = {}) {
+  const csrf = await ensureCsrf();
+  const headers = new Headers(init.headers ?? {});
+  headers.set("x-csrf-token", csrf);
+  if (init.body && !headers.has("content-type")) headers.set("content-type", "application/json");
+  return fetch(apiPath(url), { ...init, headers });
+}

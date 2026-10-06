@@ -7,13 +7,21 @@ declare module "y-supabase/lib/y-supabase" {
     tableName: string;
     idName?: string;
     id: string;
-    resyncInterval?: number;
+    resyncInterval?: number | false;
+    columnName?: string;
     databaseDetails?: Record<string, unknown>;
   }
 
   export default class SupabaseProvider {
     constructor(doc: Y.Doc, supabase: SupabaseClient, options: SupabaseProviderOptions);
-    awareness: unknown;
+    doc: Y.Doc;
+    config: SupabaseProviderOptions;
+    awareness: import("y-protocols/awareness").Awareness;
+    isOnline(online?: boolean): boolean;
+    emit(event: string, ...args: unknown[]): boolean;
+    onConnect(): void;
+    removeSelfFromAwarenessOnUnload(): void;
+    save(): void;
     destroy(): void;
     disconnect(): void;
     connect(): void;
